@@ -1,26 +1,32 @@
 class Stage
   attr_accessor :name, :location, :id
 
-  @@stages = {}
-  @@rows = 0
-  
-
-  def initialize(name, location, id)
-    @name = name
-    @location = location
-    @id = id || @@rows += 1
+  def initialize(attributes)
+    @name = attributes.fetch(:name)
+    @location = attributes.fetch(:location)
+    @id = attributes.fetch(:id)
   end
 
   def self.all()
-    @@stages.values
+    returned_stages = DB.exec("SELECT * FROM stages;")
+    stages = []
+    returned_stages.each() do |stage|
+      name = stage.fetch("name")
+      id = stage.fetch("id").to_i
+      location = stage.fetch("location")
+      stages << (Stage.new({:name => name, :id => id, :location => location}))
+    end
+    stages
   end
 
   def save
-    @@stages[self.id] = Stage.new(self.name, self.location, self.id)
+    result = DB.exec("INSERT INTO stages (name, location) VALUES ('#{@name}', '#{@location}') RETURNING id;")
+    @id = result.first().fetch("id").to_i
   end
 
   def delete
-    @@stages.delete(self.id)
+    DB.exec("DELETE FROM stages WHERE id = #{@id};")
+    DB.exec("DELETE FROM artists WHERE stage_id = #{@id};")
   end
 
   def == (param)
@@ -28,15 +34,23 @@ class Stage
   end
 
   def self.clear
-    @@stages = {}
-    @@rows = 0
+    DB.exec("DELETE FROM stagess *;")
   end
 
   def self.find(id)
-    @@stages[id]
+   stage = DB.exec("SELECT * FROM stages WHERE id = #{id};").first
+   name = stage.fetch("name")
+   id = stage.fetch("id").to_i
+   location = stage.fetch("location")
+   Stage.new({:name => name, :id => id, :location => location})
   end
 
   def artists
     Artist.find_by_stage(self.id)
+  end
+
+  def update(name)
+    @name = name
+    DB.exec("UPDATE stages SET name = '#{@name}' WHERE id = #{@id};")
   end
 end

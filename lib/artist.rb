@@ -1,51 +1,78 @@
 class Artist
-  attr_accessor :name, :id, :stage_id
+  attr_accessor :name, :id, :stage_id, :time
 
-  @@artists = {}
-  @@artist_id = 0 
 
-  def initialize(name, stage_id, id)
-    @name = name
-    @stage_id = stage_id
-    @id = id || @@artist_id += 1
+  def initialize(attributes)
+    @name = attributes.fetch(:name)
+    @stage_id = attributes.fetch(:stage_id)
+    @id = attributes.fetch(:id)
+    @time =attributes.fetch(:time)
   end
 
   def self.all
-    @@artists.values
+    returned_artists = DB.exec("SELECT * FROM artists;")
+    artists = []
+    returned_artists.each() do |artist|
+      name = artist.fetch("name")
+      stage_id = artist.fetch("stage_id").to_i
+      id = artist.fetch("id").to_i
+      time = artist.fetch("time")
+      artists.push(Artist.new({:name => name, :stage_id => stage_id, :id => id, :time => time}))
+    end
+    artists
   end
 
   def save
-    @@artists[self.id] = Artist.new(self.name, self.stage_id, self.id)
+    result = DB.exec("INSERT INTO artists (name, stage_id, time) VALUES ('#{@name}', #{@stage_id}, '#{@time}') RETURNING id;")
+    @id = result.first().fetch("id").to_i
   end
 
   def delete
-    @@artists.delete(self.id)
+    DB.exec("DELETE FROM artists WHERE id = #{@id}")
   end
 
   def self.clear
-    @@artists = {}
-    @@artist_id = 0
+    DB.exec("DELETE FROM artists *;")
   end
 
   def self.find(id)
-    @@artists[id]
+    artist = DB.exec("SELECT * FROM artists WHERE id=#{id};").first
+    name = artist.fetch("name")
+    stage_id = artist.fetch("id").to_i
+    id = artist.fetch("id").to_i
+    time = artist.fetch("time")
+    Artist.new({:name => name, :stage_id => stage_id, :id => id, :time => time})
   end
 
-  def == (param)
-    self.name() == param.name()
+  def ==(param)
+    if param != nil
+      (self.name() == param.name()) && (self.stage_id() == param.stage_id())
+    else
+      false
+    end
+  end
+  
+  def update(name, stage_id)
+    @name = name
+    @stage_id = stage_id
+    DB.exec("UPDATE artists SET name = '#{@name}', stage_id = #{@stage_id}, time = #{time}, WHERE id = #{@id};")
   end
 
   def stage
-    Stage.find(self.stage_id)
+    Stage.find(@stage_id)
   end
 
   def self.find_by_stage(id)
     artists = []
-    @@artists.values.each do |artist|
-      if artist.stage_id == id
-        artists.push(artist)
-      end
+    returned_artists = DB.exec("SELECT * FROM artists WHERE stage_id = #{id};")
+    returned_artists.each() do |artist|
+      name = artist.fetch("name")
+      id = artist.fetch("id").to_i
+      stage_id = artist.fetch("stage_id").to_i
+      time = artist.fetch("time")
+      artists << Artist.new({:name => name, :id => id, :stage_id => stage_id, :time => time})
     end
-    artists
+    artists 
   end
 end
+

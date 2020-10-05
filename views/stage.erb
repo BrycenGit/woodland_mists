@@ -7,7 +7,7 @@
 <% if @stage.artists %>
   <ul>
     <% @stage.artists.each do |artist| %>
-      <li><a href="/stages/<%= @stage.id %>/artists/<%= artist.id %>"><%= artist.name %></a></li>
+      <li><a href="/stages/<%= @stage.id %>/artists/<%= artist.id %>"><%= artist.name %>   Playing at:   <%= artist.time[12...16] %></a></li>
     <% end %>
   </ul>
 <% else %>
@@ -18,6 +18,10 @@
   <div class="form-group">
     <label for="artist_name">artist name</label>
     <input id="artist_name" name="artist_name" class="form-control" type="text">
+    
+    <label for="artist_time">artist time</label>
+    <input type="datetime-local" id="meeting-time" name="artist_time" value=""> 
+  
   </div>
   <button type="submit" class="btn">Add artist</button>
 </form>
